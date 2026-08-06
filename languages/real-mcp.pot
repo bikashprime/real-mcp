@@ -1,0 +1,65 @@
+# Copyright (C) 2024 Bikash C Mahata
+# This file is distributed under the same license as the Real MCP plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Real MCP 1.0.0\n"
+"Report-Msgid-Bugs-To: https://github.com/bikashcmahata/real-mcp/issues\n"
+"POT-Creation-Date: 2024-01-01 00:00+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: 2024-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+
+#: includes/Admin.php
+msgid "Real MCP"
+msgstr ""
+
+#: includes/Admin.php
+msgid "MCP Server Configuration"
+msgstr ""
+
+#: includes/Admin.php
+msgid "Configure authentication and security for the MCP server endpoint."
+msgstr ""
+
+#: includes/Admin.php
+msgid "API Key"
+msgstr ""
+
+#: includes/Admin.php
+msgid "Allowed Origins"
+msgstr ""
+
+#: includes/Admin.php
+msgid "MCP Endpoint URL:"
+msgstr ""
+
+#: includes/Admin.php
+msgid "Setup Required:"
+msgstr ""
+
+#: includes/Admin.php
+msgid "Generate an API key below to enable MCP connections."
+msgstr ""
+
+#: includes/Admin.php
+msgid "Connection Guide"
+msgstr ""
+
+#: includes/Admin.php
+msgid "Use the following configuration to connect your AI agent:"
+msgstr ""
+
+#: includes/Admin.php
+msgid "Generate Key"
+msgstr ""
+
+#: includes/Admin.php
+msgid "API key used to authenticate MCP client connections. Keep this secret."
+msgstr ""
+
+#: includes/Admin.php
+msgid "One hostname per line (e.g., localhost, myapp.example.com). Leave empty to allow all origins."
+msgstr ""
