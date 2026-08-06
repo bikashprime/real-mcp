@@ -261,6 +261,75 @@ class My_Custom_Tool extends AbstractTool {
 - **Elementor tools** — only registered when Elementor is active
 - **SEO tools** — auto-detect Yoast, Rank Math, or All in One SEO for metadata operations
 
+## Plugin Abilities by Plugin Name
+
+Real MCP exposes different capabilities depending on which plugins are active on your site. Below is a breakdown of abilities grouped by plugin.
+
+### Rank Math SEO
+
+When [Rank Math](https://rankmath.com/) is active, the following MCP abilities become available:
+
+#### SEO Audit & Fixes
+| Ability | Tool | Description |
+|---------|------|-------------|
+| Run SEO Audit | `rank-math/audit-site-seo` | Run a detailed SEO audit on your site (or a competitor's site with PRO) |
+| Fix SEO Issues | `rank-math/fix-site-seo` | Automatically fix failed SEO tests (blog visibility, permalinks, sitemaps, schema, robots.txt, missing focus keywords) |
+
+#### Post-Level SEO
+| Ability | Tool | Description |
+|---------|------|-------------|
+| Get Post Schema | `rank-math/get-post-schema` | Retrieve Schema markup applied to a post and available Schema types |
+| Get Post SEO Meta | `rank-math/get-post-seo-meta` | Retrieve SEO metadata — title, description, focus keyword, robots, canonical, OpenGraph, Twitter Card, SEO score |
+| Get Post Links | `rank-math/get-post-links` | Retrieve all internal and external links with anchor text and follow status |
+
+#### Site-Wide Link Analysis
+| Ability | Tool | Description |
+|---------|------|-------------|
+| Get Link Report | `rank-math/get-link-report` | Check status of links across your site — broken links, redirect chains, follow status (PRO: full HTTP status audit) |
+
+#### AI Visibility (Content AI — PRO)
+| Ability | Tool | Description |
+|---------|------|-------------|
+| AI Visibility Overview | `rank-math/get-ai-visibility-overview` | Retrieve brand visibility scores, mentions, citations, and sentiment across AI platforms |
+| Brand Insights | `rank-math/get-ai-visibility-brand-insights` | Get AI Visibility metrics for a specific brand — score, rank, mentions, competitors |
+| Brand Queries | `rank-math/get-ai-visibility-brand-queries` | Retrieve specific queries being monitored for a tracked brand |
+| Create Brand | `rank-math/create-ai-visibility-brand` | Add a new brand/product to track on AI platforms |
+
+### WooCommerce
+
+When [WooCommerce](https://woocommerce.com/) is active:
+
+| Ability | Tool | Description |
+|---------|------|-------------|
+| List Products | `woo_get_products` | List products with details, filtering, and pagination |
+| Create Product | `woo_create_product` | Create a new product with full details |
+| Update Product | `woo_update_product` | Update name, description, price, SKU, categories, status |
+| Update Inventory | `woo_update_inventory` | Update stock quantity and status for one or more products |
+| Bulk Price Update | `woo_bulk_price_update` | Bulk adjust prices — fixed, percentage increase/decrease |
+| Manage Coupons | `woo_manage_coupons` | Create and manage promotional coupons |
+
+### Elementor
+
+When [Elementor](https://elementor.com/) is active:
+
+| Ability | Tool | Description |
+|---------|------|-------------|
+| Read Page Structure | `get_elementor_data` | Read Elementor page structure and widget data |
+| Create Page | `create_elementor_page` | Create a page with Elementor section/widget structure |
+| Update Content | `update_elementor_content` | Update text in Elementor widgets (headings, text editors, buttons) |
+
+### Yoast SEO / All in One SEO
+
+When Yoast SEO or AIOSEO is active, Real MCP's built-in SEO tools automatically use the correct meta keys:
+
+| Ability | Tool | Description |
+|---------|------|-------------|
+| Get SEO Data | `get_seo_data` | Retrieve SEO metadata and issues for a post |
+| Bulk SEO Audit | `bulk_get_seo_data` | Get SEO data for multiple posts at once |
+| Update SEO Meta | `update_seo_meta` | Update meta title, description, focus keyword, Open Graph |
+| Site Audit | `seo_site_audit` | Run a site-wide SEO audit |
+| Generate Schema | `generate_schema` | Generate JSON-LD structured data |
+
 ## Security Model
 
 - All requests require a valid API key (Bearer token or X-API-Key header)
