@@ -59,7 +59,40 @@ add_action( 'rest_api_init', function () {
 register_activation_hook( REAL_MCP_FILE, function () {
 	Endpoint::register();
 	flush_rewrite_rules();
+
+	// Store the version so the upgrade routine can detect changes.
+	update_option( 'real_mcp_version', REAL_MCP_VERSION );
 } );
+
+/**
+ * Upgrade routine — runs on every load, checks if the plugin version changed.
+ *
+ * When a user uploads a new plugin ZIP via the WordPress admin (Plugins → Add
+ * New → Upload), WordPress replaces all files in the plugin directory. The
+ * activation hook does NOT fire during an upload-based update. This routine
+ * detects the version change and performs any necessary migrations so the old
+ * version is fully replaced by the current one.
+ */
+add_action( 'plugins_loaded', function () {
+	$installed_version = get_option( 'real_mcp_version', '0' );
+
+	if ( version_compare( $installed_version, REAL_MCP_VERSION, '>=' ) ) {
+		return; // Already up to date.
+	}
+
+	// --- Version-specific migrations go here ---
+
+	// Example: if upgrading from below 1.1.0, run a specific migration.
+	// if ( version_compare( $installed_version, '1.1.0', '<' ) ) {
+	//     // migration logic for 1.1.0
+	// }
+
+	// Flush rewrite rules to pick up any endpoint changes.
+	flush_rewrite_rules();
+
+	// Update the stored version.
+	update_option( 'real_mcp_version', REAL_MCP_VERSION );
+}, 5 ); // Priority 5 — run before the main plugins_loaded hook at priority 10.
 
 /**
  * Deactivation hook — clean up.
