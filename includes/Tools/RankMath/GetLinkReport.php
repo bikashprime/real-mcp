@@ -111,29 +111,18 @@ class GetLinkReport extends AbstractTool {
 		// PRO feature: Check Rank Math's internal link counter data.
 		if ( defined( 'RANK_MATH_PRO_FILE' ) ) {
 			global $wpdb;
-			$table = $wpdb->prefix . 'rank_math_internal_links';
 
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time audit query, table name is safe (prefix + hardcoded string).
-			$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+			$table_name = 'rank_math_internal_links';
 
-			if ( $table_exists === $table ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Audit query on Rank Math's table.
-				$broken_links = (int) $wpdb->get_var(
-					$wpdb->prepare(
-						'SELECT COUNT(*) FROM `' . $table . '` WHERE status_code >= %d OR status_code = %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Table name from prefix + hardcoded.
-						400,
-						0
-					)
-				);
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time audit query.
+			$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->prefix . $table_name ) );
 
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Audit query on Rank Math's table.
-				$redirects = (int) $wpdb->get_var(
-					$wpdb->prepare(
-						'SELECT COUNT(*) FROM `' . $table . '` WHERE status_code >= %d AND status_code < %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Table name from prefix + hardcoded.
-						300,
-						400
-					)
-				);
+			if ( $table_exists === $wpdb->prefix . $table_name ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Safe: table uses $wpdb->prefix + hardcoded name.
+				$broken_links = (int) $wpdb->get_var( "SELECT COUNT(*) FROM `{$wpdb->prefix}{$table_name}` WHERE status_code >= 400 OR status_code = 0" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Safe: table uses $wpdb->prefix + hardcoded name.
+				$redirects = (int) $wpdb->get_var( "SELECT COUNT(*) FROM `{$wpdb->prefix}{$table_name}` WHERE status_code >= 300 AND status_code < 400" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 				$report['pro_data'] = [
 					'broken_links'    => $broken_links,
