@@ -14,6 +14,7 @@ delete_option( 'real_mcp_api_key' );
 delete_option( 'real_mcp_allowed_origins' );
 delete_option( 'real_mcp_admin_user_id' );
 delete_option( 'real_mcp_version' );
+delete_option( 'real_mcp_enabled_tools' );
 
 // Clean up any session transients.
 global $wpdb;

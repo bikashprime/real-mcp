@@ -1,6 +1,6 @@
 <?php
 /**
- * Admin settings page for Real MCP.
+ * Admin — Dedicated admin menu for Real MCP with tabs: Config, Abilities, Help.
  *
  * @package Real_MCP
  */
@@ -14,23 +14,31 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Admin {
 
 	/**
+	 * Option key for storing enabled/disabled tools.
+	 */
+	const OPTION_ENABLED_TOOLS = 'real_mcp_enabled_tools';
+
+	/**
 	 * Initialize admin hooks.
 	 */
 	public static function init(): void {
 		add_action( 'admin_menu', [ self::class, 'add_menu' ] );
 		add_action( 'admin_init', [ self::class, 'register_settings' ] );
+		add_action( 'wp_ajax_real_mcp_save_abilities', [ self::class, 'ajax_save_abilities' ] );
 	}
 
 	/**
-	 * Add settings page under Settings menu.
+	 * Add a dedicated top-level admin menu.
 	 */
 	public static function add_menu(): void {
-		add_options_page(
+		add_menu_page(
 			__( 'Real MCP', 'real-mcp' ),
 			__( 'Real MCP', 'real-mcp' ),
 			'manage_options',
 			'real-mcp',
-			[ self::class, 'render_page' ]
+			[ self::class, 'render_page' ],
+			'dashicons-rest-api',
+			80
 		);
 	}
 
@@ -55,94 +63,286 @@ class Admin {
 			'sanitize_callback' => 'absint',
 			'default'           => 0,
 		] );
-
-		add_settings_section(
-			'real_mcp_main',
-			__( 'MCP Server Configuration', 'real-mcp' ),
-			[ self::class, 'render_section' ],
-			'real-mcp'
-		);
-
-		add_settings_field(
-			'real_mcp_api_key',
-			__( 'API Key', 'real-mcp' ),
-			[ self::class, 'render_api_key_field' ],
-			'real-mcp',
-			'real_mcp_main'
-		);
-
-		add_settings_field(
-			'real_mcp_admin_user_id',
-			__( 'Run As User', 'real-mcp' ),
-			[ self::class, 'render_user_field' ],
-			'real-mcp',
-			'real_mcp_main'
-		);
-
-		add_settings_field(
-			'real_mcp_allowed_origins',
-			__( 'Allowed Origins', 'real-mcp' ),
-			[ self::class, 'render_origins_field' ],
-			'real-mcp',
-			'real_mcp_main'
-		);
 	}
 
 	/**
-	 * Render the settings page.
+	 * Get the list of enabled tool names.
+	 * Returns null if abilities have never been configured (all enabled by default).
+	 *
+	 * @return array|null
+	 */
+	public static function get_enabled_tools(): ?array {
+		$option = get_option( self::OPTION_ENABLED_TOOLS, null );
+		if ( $option === null || $option === false ) {
+			return null; // Never configured — all tools enabled.
+		}
+		return (array) $option;
+	}
+
+	/**
+	 * Check if a specific tool is enabled.
+	 */
+	public static function is_tool_enabled( string $tool_name ): bool {
+		$enabled = self::get_enabled_tools();
+		if ( $enabled === null ) {
+			return true; // All enabled by default.
+		}
+		return in_array( $tool_name, $enabled, true );
+	}
+
+	/**
+	 * AJAX handler for saving abilities.
+	 */
+	public static function ajax_save_abilities(): void {
+		check_ajax_referer( 'real_mcp_abilities_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Insufficient permissions.' );
+		}
+
+		$enabled_tools = isset( $_POST['enabled_tools'] ) && is_array( $_POST['enabled_tools'] )
+			? array_map( 'sanitize_text_field', $_POST['enabled_tools'] )
+			: [];
+
+		update_option( self::OPTION_ENABLED_TOOLS, $enabled_tools );
+		wp_send_json_success( [ 'enabled' => count( $enabled_tools ) ] );
+	}
+
+	/**
+	 * Get tool groups for the abilities UI.
+	 */
+	private static function get_tool_groups(): array {
+		$tools = \Real_MCP\Tools\Registry::get_all_tools();
+		$groups = [];
+
+		$category_labels = [
+			'general'       => __( 'Core — General', 'real-mcp' ),
+			'content'       => __( 'Core — Content', 'real-mcp' ),
+			'seo'           => __( 'Core — SEO', 'real-mcp' ),
+			'media'         => __( 'Core — Media', 'real-mcp' ),
+			'security'      => __( 'Core — Security', 'real-mcp' ),
+			'performance'   => __( 'Core — Performance', 'real-mcp' ),
+			'maintenance'   => __( 'Core — Maintenance', 'real-mcp' ),
+			'accessibility' => __( 'Core — Accessibility', 'real-mcp' ),
+			'woocommerce'   => __( 'WooCommerce', 'real-mcp' ),
+			'elementor'     => __( 'Elementor', 'real-mcp' ),
+			'rankmath'      => __( 'Rank Math SEO', 'real-mcp' ),
+		];
+
+		foreach ( $tools as $tool ) {
+			$cat = $tool->get_category();
+			$label = $category_labels[ $cat ] ?? ucfirst( $cat );
+			if ( ! isset( $groups[ $cat ] ) ) {
+				$groups[ $cat ] = [
+					'label' => $label,
+					'tools' => [],
+				];
+			}
+			$groups[ $cat ]['tools'][] = $tool;
+		}
+
+		return $groups;
+	}
+
+	/**
+	 * Render the main admin page with tabs.
 	 */
 	public static function render_page(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
 
+		$tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'config';
+		$tabs = [
+			'config'    => __( 'Configuration', 'real-mcp' ),
+			'abilities' => __( 'Abilities', 'real-mcp' ),
+			'help'      => __( 'Help & Guide', 'real-mcp' ),
+		];
+		?>
+		<div class="wrap">
+			<h1><?php esc_html_e( 'Real MCP', 'real-mcp' ); ?></h1>
+			<nav class="nav-tab-wrapper">
+				<?php foreach ( $tabs as $slug => $label ) : ?>
+					<a href="<?php echo esc_url( admin_url( "admin.php?page=real-mcp&tab={$slug}" ) ); ?>"
+					   class="nav-tab <?php echo $tab === $slug ? 'nav-tab-active' : ''; ?>">
+						<?php echo esc_html( $label ); ?>
+					</a>
+				<?php endforeach; ?>
+			</nav>
+			<div class="real-mcp-tab-content" style="margin-top: 20px;">
+				<?php
+				match ( $tab ) {
+					'abilities' => self::render_abilities_tab(),
+					'help'      => self::render_help_tab(),
+					default     => self::render_config_tab(),
+				};
+				?>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render the Configuration tab.
+	 */
+	private static function render_config_tab(): void {
 		$endpoint_url = rest_url( Endpoint::NAMESPACE . Endpoint::ROUTE );
 		$api_key      = get_option( 'real_mcp_api_key', '' );
 		$tools        = \Real_MCP\Tools\Registry::get_tools();
 		$categories   = \Real_MCP\Tools\Registry::get_categories();
 		?>
-		<div class="wrap">
-			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+		<div class="notice notice-info" style="padding: 12px;">
+			<strong><?php esc_html_e( 'MCP Endpoint:', 'real-mcp' ); ?></strong>
+			<code><?php echo esc_url( $endpoint_url ); ?></code>
+		</div>
 
-			<div class="notice notice-info" style="padding: 12px;">
-				<strong><?php esc_html_e( 'MCP Endpoint URL:', 'real-mcp' ); ?></strong>
-				<code><?php echo esc_url( $endpoint_url ); ?></code>
+		<?php if ( empty( $api_key ) ) : ?>
+			<div class="notice notice-warning" style="padding: 12px;">
+				<strong><?php esc_html_e( 'Setup Required:', 'real-mcp' ); ?></strong>
+				<?php esc_html_e( 'Generate an API key below to enable MCP connections.', 'real-mcp' ); ?>
+			</div>
+		<?php else : ?>
+			<div class="notice notice-success" style="padding: 12px;">
+				<strong><?php esc_html_e( 'Active:', 'real-mcp' ); ?></strong>
+				<?php
+				printf(
+					esc_html__( '%1$d tools available across %2$d categories.', 'real-mcp' ),
+					count( $tools ),
+					count( $categories )
+				);
+				?>
+			</div>
+		<?php endif; ?>
+
+		<form method="post" action="options.php">
+			<?php settings_fields( 'real_mcp_settings' ); ?>
+			<table class="form-table">
+				<tr>
+					<th scope="row"><?php esc_html_e( 'API Key', 'real-mcp' ); ?></th>
+					<td>
+						<?php self::render_api_key_field(); ?>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Run As User', 'real-mcp' ); ?></th>
+					<td>
+						<?php self::render_user_field(); ?>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Allowed Origins', 'real-mcp' ); ?></th>
+					<td>
+						<?php self::render_origins_field(); ?>
+					</td>
+				</tr>
+			</table>
+			<?php submit_button(); ?>
+		</form>
+		<?php
+	}
+
+	/**
+	 * Render the Abilities tab.
+	 */
+	private static function render_abilities_tab(): void {
+		$groups       = self::get_tool_groups();
+		$enabled_tools = self::get_enabled_tools();
+		$nonce        = wp_create_nonce( 'real_mcp_abilities_nonce' );
+		?>
+		<p class="description" style="margin-bottom: 16px;">
+			<?php esc_html_e( 'Enable or disable individual tools per plugin/category. Only enabled tools are available to AI agents. Toggle groups or individual abilities.', 'real-mcp' ); ?>
+		</p>
+
+		<div id="real-mcp-abilities-notice" style="display:none;" class="notice notice-success is-dismissible">
+			<p><?php esc_html_e( 'Abilities saved successfully.', 'real-mcp' ); ?></p>
+		</div>
+
+		<form id="real-mcp-abilities-form">
+			<input type="hidden" name="nonce" value="<?php echo esc_attr( $nonce ); ?>">
+
+			<div class="real-mcp-abilities-wrap">
+			<?php foreach ( $groups as $cat => $group ) : ?>
+				<div class="real-mcp-group" data-group="<?php echo esc_attr( $cat ); ?>">
+					<div class="real-mcp-group-header">
+						<div class="real-mcp-group-left">
+							<span class="dashicons dashicons-arrow-down-alt2 real-mcp-toggle-icon"></span>
+							<strong><?php echo esc_html( $group['label'] ); ?></strong>
+							<span class="real-mcp-group-badge"><?php echo count( $group['tools'] ); ?></span>
+						</div>
+						<div class="real-mcp-group-right">
+							<label class="real-mcp-switch-label">
+								<span class="real-mcp-switch-text"><?php esc_html_e( 'Enable All', 'real-mcp' ); ?></span>
+								<input type="checkbox" class="real-mcp-group-toggle" data-group="<?php echo esc_attr( $cat ); ?>">
+								<span class="real-mcp-switch-slider"></span>
+							</label>
+						</div>
+					</div>
+					<div class="real-mcp-group-body">
+						<table class="widefat fixed striped">
+							<thead>
+								<tr>
+									<th style="width:40px;"></th>
+									<th style="width:25%;"><?php esc_html_e( 'Tool', 'real-mcp' ); ?></th>
+									<th><?php esc_html_e( 'Description', 'real-mcp' ); ?></th>
+									<th style="width:15%;"><?php esc_html_e( 'Permission', 'real-mcp' ); ?></th>
+								</tr>
+							</thead>
+							<tbody>
+							<?php foreach ( $group['tools'] as $tool ) :
+								$def = $tool->get_definition();
+								$name = $def['name'];
+								$checked = ( $enabled_tools === null ) || in_array( $name, $enabled_tools, true );
+							?>
+								<tr>
+									<td>
+										<input type="checkbox" class="real-mcp-tool-check"
+											   name="enabled_tools[]"
+											   value="<?php echo esc_attr( $name ); ?>"
+											   data-group="<?php echo esc_attr( $cat ); ?>"
+											   <?php checked( $checked ); ?>>
+									</td>
+									<td><code><?php echo esc_html( $name ); ?></code></td>
+									<td><?php echo esc_html( $def['description'] ); ?></td>
+									<td><code><?php echo esc_html( $tool->get_capability() ); ?></code></td>
+								</tr>
+							<?php endforeach; ?>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			<?php endforeach; ?>
 			</div>
 
-			<?php if ( empty( $api_key ) ) : ?>
-				<div class="notice notice-warning" style="padding: 12px;">
-					<strong><?php esc_html_e( 'Setup Required:', 'real-mcp' ); ?></strong>
-					<?php esc_html_e( 'Generate an API key below to enable MCP connections.', 'real-mcp' ); ?>
-				</div>
-			<?php else : ?>
-				<div class="notice notice-success" style="padding: 12px;">
-					<strong><?php esc_html_e( 'Active:', 'real-mcp' ); ?></strong>
-					<?php
-					printf(
-						/* translators: %1$d: number of tools, %2$d: number of categories */
-						esc_html__( '%1$d tools available across %2$d categories.', 'real-mcp' ),
-						count( $tools ),
-						count( $categories )
-					);
-					?>
-					(<?php echo esc_html( implode( ', ', $categories ) ); ?>)
-				</div>
-			<?php endif; ?>
+			<p class="submit">
+				<button type="submit" class="button button-primary" id="real-mcp-save-abilities">
+					<?php esc_html_e( 'Save Abilities', 'real-mcp' ); ?>
+				</button>
+				<span class="spinner" id="real-mcp-abilities-spinner" style="float:none;"></span>
+			</p>
+		</form>
 
-			<form method="post" action="options.php">
-				<?php
-				settings_fields( 'real_mcp_settings' );
-				do_settings_sections( 'real-mcp' );
-				submit_button();
-				?>
-			</form>
+		<?php self::render_abilities_styles(); ?>
+		<?php self::render_abilities_scripts(); ?>
+		<?php
+	}
 
-			<hr>
-			<h2><?php esc_html_e( 'Connection Guide', 'real-mcp' ); ?></h2>
-			<p><?php esc_html_e( 'Use the following configuration to connect your AI agent. The same endpoint works with all MCP-compatible clients.', 'real-mcp' ); ?></p>
+	/**
+	 * Render the Help tab.
+	 */
+	private static function render_help_tab(): void {
+		$endpoint_url = rest_url( Endpoint::NAMESPACE . Endpoint::ROUTE );
+		$api_key      = get_option( 'real_mcp_api_key', '' );
+		?>
+		<h2><?php esc_html_e( 'Getting Started', 'real-mcp' ); ?></h2>
+		<ol style="max-width:700px; line-height:1.8;">
+			<li><?php esc_html_e( 'Go to the Configuration tab and generate an API key.', 'real-mcp' ); ?></li>
+			<li><?php esc_html_e( 'Go to the Abilities tab and enable/disable the tools you want AI agents to use.', 'real-mcp' ); ?></li>
+			<li><?php esc_html_e( 'Copy the connection config below into your AI client.', 'real-mcp' ); ?></li>
+		</ol>
 
-			<h3><?php esc_html_e( 'Claude Desktop / Cursor / Kiro / VS Code', 'real-mcp' ); ?></h3>
-			<pre style="background: #f0f0f0; padding: 16px; border-radius: 4px; overflow-x: auto;">{
+		<h2><?php esc_html_e( 'Connection Config', 'real-mcp' ); ?></h2>
+		<h3><?php esc_html_e( 'Claude Desktop / Cursor / Kiro / VS Code', 'real-mcp' ); ?></h3>
+		<pre style="background:#f0f0f0;padding:16px;border-radius:4px;max-width:700px;overflow-x:auto;">{
   "mcpServers": {
     "wordpress": {
       "url": "<?php echo esc_url( $endpoint_url ); ?>",
@@ -153,166 +353,190 @@ class Admin {
   }
 }</pre>
 
-			<h3><?php esc_html_e( 'LangChain / CrewAI / AutoGen / SDK-based', 'real-mcp' ); ?></h3>
-			<pre style="background: #f0f0f0; padding: 16px; border-radius: 4px; overflow-x: auto;"># Endpoint: <?php echo esc_url( $endpoint_url ); ?>
+		<h3><?php esc_html_e( 'LangChain / CrewAI / AutoGen', 'real-mcp' ); ?></h3>
+		<pre style="background:#f0f0f0;padding:16px;border-radius:4px;max-width:700px;overflow-x:auto;"># Endpoint: <?php echo esc_url( $endpoint_url ); ?>
 
 # Header: Authorization: Bearer YOUR_API_KEY
 # Protocol: MCP 2025-06-18, Streamable HTTP transport
 # Methods: initialize → tools/list → tools/call</pre>
 
-			<h3><?php esc_html_e( 'Protocol Details', 'real-mcp' ); ?></h3>
-			<table class="widefat fixed" style="max-width: 600px;">
-				<tbody>
-					<tr><th><?php esc_html_e( 'Transport', 'real-mcp' ); ?></th><td>Streamable HTTP (POST)</td></tr>
-					<tr><th><?php esc_html_e( 'Protocol Version', 'real-mcp' ); ?></th><td>2025-06-18 (also supports 2025-03-26, 2024-11-05)</td></tr>
-					<tr><th><?php esc_html_e( 'Encoding', 'real-mcp' ); ?></th><td>JSON-RPC 2.0</td></tr>
-					<tr><th><?php esc_html_e( 'Authentication', 'real-mcp' ); ?></th><td>Bearer token, X-API-Key header, or ?api_key= parameter</td></tr>
-					<tr><th><?php esc_html_e( 'Session', 'real-mcp' ); ?></th><td>Optional (Mcp-Session-Id header)</td></tr>
-				</tbody>
-			</table>
+		<h2><?php esc_html_e( 'Protocol Details', 'real-mcp' ); ?></h2>
+		<table class="widefat fixed" style="max-width:600px;">
+			<tbody>
+				<tr><th><?php esc_html_e( 'Transport', 'real-mcp' ); ?></th><td>Streamable HTTP (POST)</td></tr>
+				<tr><th><?php esc_html_e( 'Protocol Version', 'real-mcp' ); ?></th><td>2025-06-18 (also supports 2025-03-26, 2024-11-05)</td></tr>
+				<tr><th><?php esc_html_e( 'Encoding', 'real-mcp' ); ?></th><td>JSON-RPC 2.0</td></tr>
+				<tr><th><?php esc_html_e( 'Authentication', 'real-mcp' ); ?></th><td>Bearer token, X-API-Key header, or ?api_key= parameter</td></tr>
+				<tr><th><?php esc_html_e( 'Session', 'real-mcp' ); ?></th><td>Optional (Mcp-Session-Id header)</td></tr>
+			</tbody>
+		</table>
 
-			<hr>
-			<h2><?php esc_html_e( 'Available Tools', 'real-mcp' ); ?></h2>
-			<p class="description">
-				<?php
-				printf(
-					/* translators: %1$d: number of tools, %2$d: number of categories */
-					esc_html__( 'Showing %1$d tools across %2$d categories. Click a category to expand/collapse.', 'real-mcp' ),
-					count( $tools ),
-					count( $categories )
-				);
-				?>
-			</p>
+		<h2><?php esc_html_e( 'How Abilities Work', 'real-mcp' ); ?></h2>
+		<ul style="max-width:700px; line-height:1.8; list-style:disc; padding-left:20px;">
+			<li><?php esc_html_e( 'Each tool is an ability that can be enabled or disabled from the Abilities tab.', 'real-mcp' ); ?></li>
+			<li><?php esc_html_e( 'Tools are grouped by plugin (WooCommerce, Elementor, Rank Math) or core category.', 'real-mcp' ); ?></li>
+			<li><?php esc_html_e( 'Disabled tools are hidden from AI agents — they won\'t appear in tools/list.', 'real-mcp' ); ?></li>
+			<li><?php esc_html_e( 'Plugin-specific tools only appear when that plugin is active.', 'real-mcp' ); ?></li>
+			<li><?php esc_html_e( 'Use "Enable All" / "Disable All" toggles on group headers for bulk control.', 'real-mcp' ); ?></li>
+		</ul>
 
-			<?php
-			// Group tools by category.
-			$tools_by_category = [];
-			foreach ( $tools as $tool ) {
-				$cat = $tool->get_category();
-				if ( ! isset( $tools_by_category[ $cat ] ) ) {
-					$tools_by_category[ $cat ] = [];
-				}
-				$tools_by_category[ $cat ][] = $tool;
-			}
-			ksort( $tools_by_category );
-			?>
-
-			<style>
-				.real-mcp-category-header {
-					display: flex;
-					align-items: center;
-					justify-content: space-between;
-					cursor: pointer;
-					padding: 12px 16px;
-					margin: 0;
-					background: #f6f7f7;
-					border: 1px solid #c3c4c7;
-					border-bottom: none;
-					user-select: none;
-				}
-				.real-mcp-category-header:first-of-type {
-					border-radius: 4px 4px 0 0;
-				}
-				.real-mcp-category-header:hover {
-					background: #eef0f0;
-				}
-				.real-mcp-category-header h3 {
-					margin: 0;
-					font-size: 14px;
-					text-transform: capitalize;
-				}
-				.real-mcp-category-header .dashicons {
-					transition: transform 0.2s;
-				}
-				.real-mcp-category-header.collapsed .dashicons {
-					transform: rotate(-90deg);
-				}
-				.real-mcp-category-badge {
-					display: inline-block;
-					background: #2271b1;
-					color: #fff;
-					font-size: 11px;
-					padding: 2px 8px;
-					border-radius: 10px;
-					margin-left: 8px;
-					font-weight: normal;
-				}
-				.real-mcp-category-table {
-					margin: 0;
-					border-top: none;
-					border-radius: 0;
-				}
-				.real-mcp-category-table:last-of-type {
-					border-radius: 0 0 4px 4px;
-				}
-				.real-mcp-category-wrap {
-					margin-bottom: 0;
-				}
-				.real-mcp-category-wrap:last-child .real-mcp-category-header {
-					border-bottom: 1px solid #c3c4c7;
-				}
-				.real-mcp-category-wrap:last-child .real-mcp-category-header:not(.collapsed) {
-					border-bottom: none;
-				}
-			</style>
-
-			<div class="real-mcp-tools-accordion">
-				<?php foreach ( $tools_by_category as $category_name => $category_tools ) : ?>
-					<div class="real-mcp-category-wrap">
-						<div class="real-mcp-category-header" data-category="<?php echo esc_attr( $category_name ); ?>">
-							<h3>
-								<span class="dashicons dashicons-arrow-down-alt2"></span>
-								<?php echo esc_html( ucfirst( $category_name ) ); ?>
-								<span class="real-mcp-category-badge"><?php echo count( $category_tools ); ?></span>
-							</h3>
-						</div>
-						<table class="widefat fixed striped real-mcp-category-table">
-							<thead>
-								<tr>
-									<th style="width: 25%;"><?php esc_html_e( 'Tool', 'real-mcp' ); ?></th>
-									<th><?php esc_html_e( 'Description', 'real-mcp' ); ?></th>
-								</tr>
-							</thead>
-							<tbody>
-								<?php foreach ( $category_tools as $tool ) : $def = $tool->get_definition(); ?>
-									<tr>
-										<td><code><?php echo esc_html( $def['name'] ); ?></code></td>
-										<td><?php echo esc_html( $def['description'] ); ?></td>
-									</tr>
-								<?php endforeach; ?>
-							</tbody>
-						</table>
-					</div>
-				<?php endforeach; ?>
-			</div>
-
-			<script>
-				(function() {
-					var headers = document.querySelectorAll('.real-mcp-category-header');
-					headers.forEach(function(header) {
-						header.addEventListener('click', function() {
-							var table = this.nextElementSibling;
-							var isCollapsed = this.classList.toggle('collapsed');
-							table.style.display = isCollapsed ? 'none' : '';
-						});
-					});
-				})();
-			</script>
-		</div>
+		<h2><?php esc_html_e( 'Supported Plugins', 'real-mcp' ); ?></h2>
+		<table class="widefat fixed" style="max-width:600px;">
+			<thead><tr><th><?php esc_html_e( 'Plugin', 'real-mcp' ); ?></th><th><?php esc_html_e( 'Status', 'real-mcp' ); ?></th></tr></thead>
+			<tbody>
+				<tr>
+					<td>WooCommerce</td>
+					<td><?php echo class_exists( 'WooCommerce' ) ? '<span style="color:green;">✓ Active</span>' : '<span style="color:#999;">Not installed</span>'; ?></td>
+				</tr>
+				<tr>
+					<td>Elementor</td>
+					<td><?php echo defined( 'ELEMENTOR_VERSION' ) ? '<span style="color:green;">✓ Active</span>' : '<span style="color:#999;">Not installed</span>'; ?></td>
+				</tr>
+				<tr>
+					<td>Rank Math SEO</td>
+					<td><?php echo class_exists( 'RankMath' ) ? '<span style="color:green;">✓ Active</span>' : '<span style="color:#999;">Not installed</span>'; ?></td>
+				</tr>
+				<tr>
+					<td>Yoast SEO</td>
+					<td><?php echo defined( 'WPSEO_VERSION' ) ? '<span style="color:green;">✓ Active</span>' : '<span style="color:#999;">Not installed</span>'; ?></td>
+				</tr>
+			</tbody>
+		</table>
 		<?php
 	}
 
 	/**
-	 * Render section description.
+	 * Render abilities tab styles.
 	 */
-	public static function render_section(): void {
-		echo '<p>' . esc_html__( 'Configure authentication and security for the MCP server endpoint.', 'real-mcp' ) . '</p>';
+	private static function render_abilities_styles(): void {
+		?>
+		<style>
+		.real-mcp-abilities-wrap { max-width: 900px; }
+		.real-mcp-group { margin-bottom: 0; border: 1px solid #c3c4c7; border-bottom: none; }
+		.real-mcp-group:first-child { border-radius: 4px 4px 0 0; }
+		.real-mcp-group:last-child { border-bottom: 1px solid #c3c4c7; border-radius: 0 0 4px 4px; }
+		.real-mcp-group:only-child { border-radius: 4px; }
+		.real-mcp-group-header {
+			display: flex; align-items: center; justify-content: space-between;
+			padding: 12px 16px; background: #f6f7f7; cursor: pointer; user-select: none;
+		}
+		.real-mcp-group-header:hover { background: #eef0f0; }
+		.real-mcp-group-left { display: flex; align-items: center; gap: 8px; }
+		.real-mcp-group-right { display: flex; align-items: center; }
+		.real-mcp-toggle-icon { transition: transform 0.2s; }
+		.real-mcp-group.collapsed .real-mcp-toggle-icon { transform: rotate(-90deg); }
+		.real-mcp-group.collapsed .real-mcp-group-body { display: none; }
+		.real-mcp-group-badge {
+			background: #2271b1; color: #fff; font-size: 11px;
+			padding: 2px 8px; border-radius: 10px;
+		}
+		.real-mcp-group-body { border-top: 1px solid #c3c4c7; }
+		.real-mcp-group-body table { margin: 0; border: none; }
+
+		/* Toggle switch */
+		.real-mcp-switch-label {
+			display: flex; align-items: center; gap: 8px; cursor: pointer;
+			font-size: 12px;
+		}
+		.real-mcp-switch-label input { display: none; }
+		.real-mcp-switch-slider {
+			position: relative; width: 36px; height: 20px;
+			background: #ccc; border-radius: 20px; transition: background 0.3s;
+		}
+		.real-mcp-switch-slider::before {
+			content: ''; position: absolute; top: 2px; left: 2px;
+			width: 16px; height: 16px; background: #fff;
+			border-radius: 50%; transition: transform 0.3s;
+		}
+		.real-mcp-switch-label input:checked + .real-mcp-switch-slider {
+			background: #2271b1;
+		}
+		.real-mcp-switch-label input:checked + .real-mcp-switch-slider::before {
+			transform: translateX(16px);
+		}
+		</style>
+		<?php
+	}
+
+	/**
+	 * Render abilities tab scripts.
+	 */
+	private static function render_abilities_scripts(): void {
+		?>
+		<script>
+		(function(){
+			// Collapse/expand groups.
+			document.querySelectorAll('.real-mcp-group-header').forEach(function(header) {
+				header.querySelector('.real-mcp-group-left').addEventListener('click', function(e) {
+					header.parentElement.classList.toggle('collapsed');
+				});
+			});
+
+			// Group toggle (Enable All / Disable All).
+			document.querySelectorAll('.real-mcp-group-toggle').forEach(function(toggle) {
+				var group = toggle.dataset.group;
+				var checks = document.querySelectorAll('.real-mcp-tool-check[data-group="'+group+'"]');
+
+				// Set initial state.
+				var allChecked = Array.from(checks).every(function(c){ return c.checked; });
+				toggle.checked = allChecked;
+
+				// Update label.
+				updateToggleLabel(toggle);
+
+				toggle.addEventListener('change', function() {
+					checks.forEach(function(c){ c.checked = toggle.checked; });
+					updateToggleLabel(toggle);
+				});
+
+				// Sync toggle when individual checkboxes change.
+				checks.forEach(function(c) {
+					c.addEventListener('change', function() {
+						var all = Array.from(checks).every(function(ch){ return ch.checked; });
+						toggle.checked = all;
+						updateToggleLabel(toggle);
+					});
+				});
+			});
+
+			function updateToggleLabel(toggle) {
+				var label = toggle.closest('.real-mcp-switch-label').querySelector('.real-mcp-switch-text');
+				label.textContent = toggle.checked ? '<?php echo esc_js( __( 'Disable All', 'real-mcp' ) ); ?>' : '<?php echo esc_js( __( 'Enable All', 'real-mcp' ) ); ?>';
+			}
+
+			// Save via AJAX.
+			document.getElementById('real-mcp-abilities-form').addEventListener('submit', function(e) {
+				e.preventDefault();
+				var spinner = document.getElementById('real-mcp-abilities-spinner');
+				spinner.classList.add('is-active');
+
+				var formData = new FormData();
+				formData.append('action', 'real_mcp_save_abilities');
+				formData.append('nonce', this.querySelector('[name=nonce]').value);
+
+				var checked = document.querySelectorAll('.real-mcp-tool-check:checked');
+				checked.forEach(function(c) {
+					formData.append('enabled_tools[]', c.value);
+				});
+
+				fetch(ajaxurl, { method: 'POST', body: formData })
+					.then(function(r){ return r.json(); })
+					.then(function(data) {
+						spinner.classList.remove('is-active');
+						var notice = document.getElementById('real-mcp-abilities-notice');
+						notice.style.display = 'block';
+						setTimeout(function(){ notice.style.display = 'none'; }, 3000);
+					});
+			});
+		})();
+		</script>
+		<?php
 	}
 
 	/**
 	 * Render API key field.
 	 */
-	public static function render_api_key_field(): void {
+	private static function render_api_key_field(): void {
 		$value = get_option( 'real_mcp_api_key', '' );
 		?>
 		<input type="text" name="real_mcp_api_key" value="<?php echo esc_attr( $value ); ?>"
@@ -339,12 +563,12 @@ class Admin {
 	/**
 	 * Render allowed origins field.
 	 */
-	public static function render_origins_field(): void {
+	private static function render_origins_field(): void {
 		$value = get_option( 'real_mcp_allowed_origins', '' );
 		?>
-		<textarea name="real_mcp_allowed_origins" rows="4" class="large-text"><?php echo esc_textarea( $value ); ?></textarea>
+		<textarea name="real_mcp_allowed_origins" rows="3" class="large-text"><?php echo esc_textarea( $value ); ?></textarea>
 		<p class="description">
-			<?php esc_html_e( 'One hostname per line (e.g., localhost, myapp.example.com). Leave empty to allow all origins.', 'real-mcp' ); ?>
+			<?php esc_html_e( 'One hostname per line. Leave empty to allow all origins.', 'real-mcp' ); ?>
 		</p>
 		<?php
 	}
@@ -352,8 +576,8 @@ class Admin {
 	/**
 	 * Render "Run As User" dropdown.
 	 */
-	public static function render_user_field(): void {
-		$value = (int) get_option( 'real_mcp_admin_user_id', 0 );
+	private static function render_user_field(): void {
+		$value  = (int) get_option( 'real_mcp_admin_user_id', 0 );
 		$admins = get_users( [ 'role' => 'administrator' ] );
 		?>
 		<select name="real_mcp_admin_user_id">
@@ -365,7 +589,7 @@ class Admin {
 			<?php endforeach; ?>
 		</select>
 		<p class="description">
-			<?php esc_html_e( 'MCP operations will execute with this user\'s permissions. Choose the admin account the AI agent should act as.', 'real-mcp' ); ?>
+			<?php esc_html_e( 'MCP operations execute with this user\'s permissions.', 'real-mcp' ); ?>
 		</p>
 		<?php
 	}

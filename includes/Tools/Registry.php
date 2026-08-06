@@ -137,32 +137,47 @@ class Registry {
 	}
 
 	/**
-	 * Get all registered tools.
+	 * Get all registered tools (filtered by enabled abilities).
 	 *
 	 * @return array<string, ToolInterface>
 	 */
 	public static function get_tools(): array {
 		self::load();
+		return self::filter_enabled( self::$tools );
+	}
+
+	/**
+	 * Get all registered tools WITHOUT filtering (for admin UI).
+	 *
+	 * @return array<string, ToolInterface>
+	 */
+	public static function get_all_tools(): array {
+		self::load();
 		return self::$tools;
 	}
 
 	/**
-	 * Get a specific tool by name.
+	 * Get a specific tool by name (only if enabled).
 	 */
 	public static function get_tool( string $name ): ?ToolInterface {
 		self::load();
-		return self::$tools[ $name ] ?? null;
+		$tool = self::$tools[ $name ] ?? null;
+		if ( $tool && ! \Real_MCP\Admin::is_tool_enabled( $name ) ) {
+			return null;
+		}
+		return $tool;
 	}
 
 	/**
-	 * Get tools filtered by category.
+	 * Get tools filtered by category (respects enabled status).
 	 *
 	 * @param string $category Category name.
 	 * @return array<string, ToolInterface>
 	 */
 	public static function get_tools_by_category( string $category ): array {
 		self::load();
-		return array_filter( self::$tools, fn( $tool ) => $tool->get_category() === $category );
+		$filtered = array_filter( self::$tools, fn( $tool ) => $tool->get_category() === $category );
+		return self::filter_enabled( $filtered );
 	}
 
 	/**
@@ -172,6 +187,24 @@ class Registry {
 	 */
 	public static function get_categories(): array {
 		self::load();
-		return array_unique( array_map( fn( $tool ) => $tool->get_category(), self::$tools ) );
+		$enabled = self::filter_enabled( self::$tools );
+		return array_values( array_unique( array_map( fn( $tool ) => $tool->get_category(), $enabled ) ) );
+	}
+
+	/**
+	 * Filter tools by enabled abilities setting.
+	 *
+	 * @param array<string, ToolInterface> $tools
+	 * @return array<string, ToolInterface>
+	 */
+	private static function filter_enabled( array $tools ): array {
+		$enabled_list = \Real_MCP\Admin::get_enabled_tools();
+		if ( $enabled_list === null ) {
+			return $tools; // Never configured — all enabled.
+		}
+		return array_filter( $tools, function( ToolInterface $tool ) use ( $enabled_list ) {
+			$def = $tool->get_definition();
+			return in_array( $def['name'], $enabled_list, true );
+		} );
 	}
 }
