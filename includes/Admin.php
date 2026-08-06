@@ -315,6 +315,52 @@ class Admin {
 			<?php endforeach; ?>
 			</div>
 
+			<?php
+			// Show inactive plugin groups (locked).
+			$inactive_groups = \Real_MCP\Tools\Registry::get_inactive_plugin_tools();
+			if ( ! empty( $inactive_groups ) ) :
+			?>
+			<div class="real-mcp-abilities-wrap" style="margin-top: 24px;">
+				<h3 style="margin-bottom: 8px;"><?php esc_html_e( 'Available with additional plugins', 'real-mcp' ); ?></h3>
+				<?php foreach ( $inactive_groups as $cat => $group ) : ?>
+					<div class="real-mcp-group real-mcp-group-locked collapsed" data-group="<?php echo esc_attr( $cat ); ?>">
+						<div class="real-mcp-group-header">
+							<div class="real-mcp-group-left">
+								<span class="dashicons dashicons-arrow-down-alt2 real-mcp-toggle-icon"></span>
+								<strong><?php echo esc_html( $group['label'] ); ?></strong>
+								<span class="real-mcp-group-badge real-mcp-badge-locked"><?php echo count( $group['tools'] ); ?></span>
+							</div>
+							<div class="real-mcp-group-right">
+								<a href="<?php echo esc_url( $group['plugin_url'] ); ?>" target="_blank" class="button button-small">
+									<?php esc_html_e( 'Install Plugin', 'real-mcp' ); ?>
+								</a>
+							</div>
+						</div>
+						<div class="real-mcp-group-body">
+							<table class="widefat fixed striped">
+								<thead>
+									<tr>
+										<th style="width:40px;"></th>
+										<th style="width:25%;"><?php esc_html_e( 'Tool', 'real-mcp' ); ?></th>
+										<th><?php esc_html_e( 'Description', 'real-mcp' ); ?></th>
+									</tr>
+								</thead>
+								<tbody>
+								<?php foreach ( $group['tools'] as $tool_info ) : ?>
+									<tr class="real-mcp-row-locked">
+										<td><input type="checkbox" disabled></td>
+										<td><code><?php echo esc_html( $tool_info['name'] ); ?></code></td>
+										<td><?php echo esc_html( $tool_info['description'] ); ?></td>
+									</tr>
+								<?php endforeach; ?>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				<?php endforeach; ?>
+			</div>
+			<?php endif; ?>
+
 			<p class="submit">
 				<button type="submit" class="button button-primary" id="real-mcp-save-abilities">
 					<?php esc_html_e( 'Save Abilities', 'real-mcp' ); ?>
@@ -435,6 +481,13 @@ class Admin {
 		.real-mcp-group-body { border-top: 1px solid #c3c4c7; }
 		.real-mcp-group-body table { margin: 0; border: none; }
 
+		/* Locked (inactive plugin) groups */
+		.real-mcp-group-locked { opacity: 0.75; }
+		.real-mcp-group-locked .real-mcp-group-header { background: #f9f3f0; }
+		.real-mcp-badge-locked { background: #9e9e9e; }
+		.real-mcp-row-locked { opacity: 0.6; }
+		.real-mcp-row-locked input[disabled] { cursor: not-allowed; }
+
 		/* Toggle switch */
 		.real-mcp-switch-label {
 			display: flex; align-items: center; gap: 8px; cursor: pointer;
@@ -467,7 +520,7 @@ class Admin {
 		?>
 		<script>
 		(function(){
-			// Collapse/expand groups.
+			// Collapse/expand groups (both active and locked).
 			document.querySelectorAll('.real-mcp-group-header').forEach(function(header) {
 				header.querySelector('.real-mcp-group-left').addEventListener('click', function(e) {
 					header.parentElement.classList.toggle('collapsed');

@@ -207,4 +207,62 @@ class Registry {
 			return in_array( $def['name'], $enabled_list, true );
 		} );
 	}
+
+	/**
+	 * Get info about plugin tools that are inactive (plugin not installed).
+	 * Used by admin UI to show locked groups.
+	 *
+	 * @return array<string, array{label: string, plugin_url: string, tools: array}>
+	 */
+	public static function get_inactive_plugin_tools(): array {
+		$inactive = [];
+
+		if ( ! class_exists( 'WooCommerce' ) && ! defined( 'WC_PLUGIN_FILE' ) ) {
+			$inactive['woocommerce'] = [
+				'label'      => __( 'WooCommerce', 'real-mcp' ),
+				'plugin_url' => 'https://wordpress.org/plugins/woocommerce/',
+				'tools'      => [
+					[ 'name' => 'woo_get_products', 'description' => 'List products with details' ],
+					[ 'name' => 'woo_create_product', 'description' => 'Create a new product' ],
+					[ 'name' => 'woo_update_product', 'description' => 'Update product name, description, price, SKU, categories, status' ],
+					[ 'name' => 'woo_update_inventory', 'description' => 'Update stock quantity and status' ],
+					[ 'name' => 'woo_bulk_price_update', 'description' => 'Bulk adjust prices' ],
+					[ 'name' => 'woo_manage_coupons', 'description' => 'Create/manage promotional coupons' ],
+				],
+			];
+		}
+
+		if ( ! defined( 'ELEMENTOR_VERSION' ) ) {
+			$inactive['elementor'] = [
+				'label'      => __( 'Elementor', 'real-mcp' ),
+				'plugin_url' => 'https://wordpress.org/plugins/elementor/',
+				'tools'      => [
+					[ 'name' => 'get_elementor_data', 'description' => 'Read Elementor page structure' ],
+					[ 'name' => 'create_elementor_page', 'description' => 'Create a page with Elementor structure' ],
+					[ 'name' => 'update_elementor_content', 'description' => 'Update text in Elementor widgets' ],
+				],
+			];
+		}
+
+		if ( ! class_exists( 'RankMath' ) ) {
+			$inactive['rankmath'] = [
+				'label'      => __( 'Rank Math SEO', 'real-mcp' ),
+				'plugin_url' => 'https://wordpress.org/plugins/seo-by-rank-math/',
+				'tools'      => [
+					[ 'name' => 'rankmath_audit_site_seo', 'description' => 'Run a detailed SEO audit on your site' ],
+					[ 'name' => 'rankmath_fix_site_seo', 'description' => 'Automatically fix failed SEO tests' ],
+					[ 'name' => 'rankmath_get_post_schema', 'description' => 'Retrieve Schema markup for a post' ],
+					[ 'name' => 'rankmath_get_post_seo_meta', 'description' => 'Get full SEO metadata' ],
+					[ 'name' => 'rankmath_get_post_links', 'description' => 'Get all links with anchor text and follow status' ],
+					[ 'name' => 'rankmath_get_link_report', 'description' => 'Site-wide link status report' ],
+					[ 'name' => 'rankmath_get_ai_visibility_overview', 'description' => 'AI Visibility report for all brands (PRO)' ],
+					[ 'name' => 'rankmath_get_ai_visibility_brand_insights', 'description' => 'AI Visibility for a specific brand (PRO)' ],
+					[ 'name' => 'rankmath_get_ai_visibility_brand_queries', 'description' => 'Queries tracked for a brand (PRO)' ],
+					[ 'name' => 'rankmath_create_ai_visibility_brand', 'description' => 'Add a new brand to track (PRO)' ],
+				],
+			];
+		}
+
+		return $inactive;
+	}
 }
