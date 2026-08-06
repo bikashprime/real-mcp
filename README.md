@@ -152,6 +152,20 @@ This plugin provides comprehensive update tools across the entire WordPress stac
 | `create_elementor_page` | Create a page with Elementor section/widget structure |
 | `update_elementor_content` | Update text in Elementor widgets |
 
+### Rank Math (auto-enabled when Rank Math is active)
+| Tool | Description |
+|------|-------------|
+| `rankmath_audit_site_seo` | Run a detailed SEO audit on your site |
+| `rankmath_fix_site_seo` | Automatically fix failed SEO tests |
+| `rankmath_get_post_schema` | Retrieve Schema markup and available types for a post |
+| `rankmath_get_post_seo_meta` | Get full SEO metadata — title, description, robots, OG, Twitter, score |
+| `rankmath_get_post_links` | Get all internal/external links with anchor text and follow status |
+| `rankmath_get_link_report` | Site-wide link status report |
+| `rankmath_get_ai_visibility_overview` | AI Visibility report for all tracked brands (PRO) |
+| `rankmath_get_ai_visibility_brand_insights` | AI Visibility metrics for a specific brand (PRO) |
+| `rankmath_get_ai_visibility_brand_queries` | Queries being tracked for a brand (PRO) |
+| `rankmath_create_ai_visibility_brand` | Add a new brand to AI Visibility tracking (PRO) |
+
 ### Security
 | Tool | Description |
 |------|-------------|
@@ -197,6 +211,7 @@ real-mcp/
 │       ├── Media/               ← Media library tools
 │       ├── WooCommerce/         ← WooCommerce integration
 │       ├── Elementor/           ← Elementor page builder integration
+│       ├── RankMath/            ← Rank Math SEO integration
 │       ├── Security/            ← Security audit tools
 │       ├── Performance/         ← Performance & optimization tools
 │       ├── Maintenance/         ← Update & health check tools
@@ -259,6 +274,7 @@ class My_Custom_Tool extends AbstractTool {
 
 - **WooCommerce tools** — only registered when WooCommerce is active
 - **Elementor tools** — only registered when Elementor is active
+- **Rank Math tools** — only registered when Rank Math is active (AI Visibility tools require PRO + Content AI)
 - **SEO tools** — auto-detect Yoast, Rank Math, or All in One SEO for metadata operations
 
 ## Plugin Abilities by Plugin Name
@@ -272,28 +288,28 @@ When [Rank Math](https://rankmath.com/) is active, the following MCP abilities b
 #### SEO Audit & Fixes
 | Ability | Tool | Description |
 |---------|------|-------------|
-| Run SEO Audit | `rank-math/audit-site-seo` | Run a detailed SEO audit on your site (or a competitor's site with PRO) |
-| Fix SEO Issues | `rank-math/fix-site-seo` | Automatically fix failed SEO tests (blog visibility, permalinks, sitemaps, schema, robots.txt, missing focus keywords) |
+| Run SEO Audit | `rankmath_audit_site_seo` | Run a detailed SEO audit on your site — blog visibility, permalinks, sitemaps, schema, robots.txt, focus keywords |
+| Fix SEO Issues | `rankmath_fix_site_seo` | Automatically fix failed SEO tests (blog visibility, permalink structure, site tagline, sitemaps, schema, noindex meta, robots.txt, missing focus keywords) |
 
 #### Post-Level SEO
 | Ability | Tool | Description |
 |---------|------|-------------|
-| Get Post Schema | `rank-math/get-post-schema` | Retrieve Schema markup applied to a post and available Schema types |
-| Get Post SEO Meta | `rank-math/get-post-seo-meta` | Retrieve SEO metadata — title, description, focus keyword, robots, canonical, OpenGraph, Twitter Card, SEO score |
-| Get Post Links | `rank-math/get-post-links` | Retrieve all internal and external links with anchor text and follow status |
+| Get Post Schema | `rankmath_get_post_schema` | Retrieve Schema markup applied to a post and available Schema types |
+| Get Post SEO Meta | `rankmath_get_post_seo_meta` | Retrieve SEO metadata — title, description, focus keyword, robots, canonical, OpenGraph, Twitter Card, SEO score |
+| Get Post Links | `rankmath_get_post_links` | Retrieve all internal and external links with anchor text and follow status |
 
 #### Site-Wide Link Analysis
 | Ability | Tool | Description |
 |---------|------|-------------|
-| Get Link Report | `rank-math/get-link-report` | Check status of links across your site — broken links, redirect chains, follow status (PRO: full HTTP status audit) |
+| Get Link Report | `rankmath_get_link_report` | Check status of links across your site — posts without links, total counts (PRO: broken links, redirect chains, HTTP status) |
 
 #### AI Visibility (Content AI — PRO)
 | Ability | Tool | Description |
 |---------|------|-------------|
-| AI Visibility Overview | `rank-math/get-ai-visibility-overview` | Retrieve brand visibility scores, mentions, citations, and sentiment across AI platforms |
-| Brand Insights | `rank-math/get-ai-visibility-brand-insights` | Get AI Visibility metrics for a specific brand — score, rank, mentions, competitors |
-| Brand Queries | `rank-math/get-ai-visibility-brand-queries` | Retrieve specific queries being monitored for a tracked brand |
-| Create Brand | `rank-math/create-ai-visibility-brand` | Add a new brand/product to track on AI platforms |
+| AI Visibility Overview | `rankmath_get_ai_visibility_overview` | Retrieve brand visibility scores, mentions, citations, and sentiment across AI platforms |
+| Brand Insights | `rankmath_get_ai_visibility_brand_insights` | Get AI Visibility metrics for a specific brand — score, rank, mentions, competitors |
+| Brand Queries | `rankmath_get_ai_visibility_brand_queries` | Retrieve specific queries being monitored for a tracked brand |
+| Create Brand | `rankmath_create_ai_visibility_brand` | Add a new brand/product to track on AI platforms |
 
 ### WooCommerce
 
@@ -345,6 +361,7 @@ When Yoast SEO or AIOSEO is active, Real MCP's built-in SEO tools automatically 
 - PHP 8.0+
 - Optional: WooCommerce 7.0+ (for WooCommerce tools)
 - Optional: Elementor 3.0+ (for Elementor tools)
+- Optional: Rank Math SEO (for Rank Math tools; PRO required for AI Visibility)
 
 ## License
 

@@ -81,6 +81,20 @@ class Registry {
 			self::register( new Elementor\CreateElementorPage() );
 		}
 
+		// Register Rank Math tools (only if Rank Math is active).
+		if ( class_exists( 'RankMath' ) ) {
+			self::register( new RankMath\AuditSiteSeo() );
+			self::register( new RankMath\FixSiteSeo() );
+			self::register( new RankMath\GetPostSchema() );
+			self::register( new RankMath\GetPostSeoMeta() );
+			self::register( new RankMath\GetPostLinks() );
+			self::register( new RankMath\GetLinkReport() );
+			self::register( new RankMath\GetAiVisibilityOverview() );
+			self::register( new RankMath\GetAiVisibilityBrandInsights() );
+			self::register( new RankMath\GetAiVisibilityBrandQueries() );
+			self::register( new RankMath\CreateAiVisibilityBrand() );
+		}
+
 		// Register Security tools.
 		self::register( new Security\SecurityAudit() );
 		self::register( new Security\PluginAudit() );
