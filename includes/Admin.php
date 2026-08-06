@@ -206,8 +206,8 @@ class Admin {
 			<div class="notice notice-success" style="padding: 12px;">
 				<strong><?php esc_html_e( 'Active:', 'real-mcp' ); ?></strong>
 				<?php
-				/* translators: %1$d: number of tools, %2$d: number of categories */
 				printf(
+					/* translators: %1$d: number of tools, %2$d: number of categories */
 					esc_html__( '%1$d tools available across %2$d categories.', 'real-mcp' ),
 					count( $tools ),
 					count( $categories )

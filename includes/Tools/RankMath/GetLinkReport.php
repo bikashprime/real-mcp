@@ -119,14 +119,20 @@ class GetLinkReport extends AbstractTool {
 			if ( $table_exists === $table ) {
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Audit query on Rank Math's table.
 				$broken_links = (int) $wpdb->get_var(
-					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safe: prefix + hardcoded string.
-					"SELECT COUNT(*) FROM `{$table}` WHERE status_code >= 400 OR status_code = 0"
+					$wpdb->prepare(
+						'SELECT COUNT(*) FROM `' . $table . '` WHERE status_code >= %d OR status_code = %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Table name from prefix + hardcoded.
+						400,
+						0
+					)
 				);
 
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Audit query on Rank Math's table.
 				$redirects = (int) $wpdb->get_var(
-					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safe: prefix + hardcoded string.
-					"SELECT COUNT(*) FROM `{$table}` WHERE status_code >= 300 AND status_code < 400"
+					$wpdb->prepare(
+						'SELECT COUNT(*) FROM `' . $table . '` WHERE status_code >= %d AND status_code < %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Table name from prefix + hardcoded.
+						300,
+						400
+					)
 				);
 
 				$report['pro_data'] = [
