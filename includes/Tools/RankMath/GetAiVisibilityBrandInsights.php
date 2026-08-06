@@ -64,7 +64,7 @@ class GetAiVisibilityBrandInsights extends AbstractTool {
 		}
 
 		if ( ! $found ) {
-			throw new \InvalidArgumentException( "Brand '{$brand_name}' is not being tracked. Use the create brand tool to add it." );
+			throw new \InvalidArgumentException( esc_html( "Brand '{$brand_name}' is not being tracked. Use the create brand tool to add it." ) );
 		}
 
 		return $this->json_response( [

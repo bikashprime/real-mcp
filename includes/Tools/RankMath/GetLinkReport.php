@@ -113,13 +113,20 @@ class GetLinkReport extends AbstractTool {
 			global $wpdb;
 			$table = $wpdb->prefix . 'rank_math_internal_links';
 
-			if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" ) === $table ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time audit query, table name is safe (prefix + hardcoded string).
+			$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+
+			if ( $table_exists === $table ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Audit query on Rank Math's table.
 				$broken_links = (int) $wpdb->get_var(
-					"SELECT COUNT(*) FROM {$table} WHERE status_code >= 400 OR status_code = 0"
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safe: prefix + hardcoded string.
+					"SELECT COUNT(*) FROM `{$table}` WHERE status_code >= 400 OR status_code = 0"
 				);
 
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Audit query on Rank Math's table.
 				$redirects = (int) $wpdb->get_var(
-					"SELECT COUNT(*) FROM {$table} WHERE status_code >= 300 AND status_code < 400"
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safe: prefix + hardcoded string.
+					"SELECT COUNT(*) FROM `{$table}` WHERE status_code >= 300 AND status_code < 400"
 				);
 
 				$report['pro_data'] = [

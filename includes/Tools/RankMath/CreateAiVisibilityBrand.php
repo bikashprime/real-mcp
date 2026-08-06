@@ -79,7 +79,7 @@ class CreateAiVisibilityBrand extends AbstractTool {
 		// Check for duplicates.
 		foreach ( $brands as $brand ) {
 			if ( strcasecmp( $brand['name'] ?? '', $name ) === 0 ) {
-				throw new \InvalidArgumentException( "Brand '{$name}' is already being tracked." );
+				throw new \InvalidArgumentException( esc_html( "Brand '{$name}' is already being tracked." ) );
 			}
 		}
 

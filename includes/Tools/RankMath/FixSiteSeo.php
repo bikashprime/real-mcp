@@ -142,6 +142,7 @@ class FixSiteSeo extends AbstractTool {
 		// Fix: Missing focus keywords.
 		if ( $fix_all || in_array( 'focus_keywords', $tests_to_fix, true ) ) {
 			global $wpdb;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Fix operation, needs fresh data.
 			$posts_without_kw = $wpdb->get_results(
 				"SELECT p.ID, p.post_title FROM {$wpdb->posts} p
 				 LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = 'rank_math_focus_keyword'

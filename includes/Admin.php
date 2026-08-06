@@ -101,7 +101,7 @@ class Admin {
 		}
 
 		$enabled_tools = isset( $_POST['enabled_tools'] ) && is_array( $_POST['enabled_tools'] )
-			? array_map( 'sanitize_text_field', $_POST['enabled_tools'] )
+			? array_map( 'sanitize_text_field', wp_unslash( $_POST['enabled_tools'] ) )
 			: [];
 
 		update_option( self::OPTION_ENABLED_TOOLS, $enabled_tools );
@@ -152,7 +152,8 @@ class Admin {
 			return;
 		}
 
-		$tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'config';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Tab navigation only, no data modification.
+		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'config'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$tabs = [
 			'config'    => __( 'Configuration', 'real-mcp' ),
 			'abilities' => __( 'Abilities', 'real-mcp' ),
@@ -205,6 +206,7 @@ class Admin {
 			<div class="notice notice-success" style="padding: 12px;">
 				<strong><?php esc_html_e( 'Active:', 'real-mcp' ); ?></strong>
 				<?php
+				/* translators: %1$d: number of tools, %2$d: number of categories */
 				printf(
 					esc_html__( '%1$d tools available across %2$d categories.', 'real-mcp' ),
 					count( $tools ),

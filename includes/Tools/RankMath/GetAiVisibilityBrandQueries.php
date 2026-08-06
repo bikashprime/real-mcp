@@ -64,7 +64,7 @@ class GetAiVisibilityBrandQueries extends AbstractTool {
 		}
 
 		if ( ! $found ) {
-			throw new \InvalidArgumentException( "Brand '{$brand_name}' is not being tracked." );
+			throw new \InvalidArgumentException( esc_html( "Brand '{$brand_name}' is not being tracked." ) );
 		}
 
 		$queries = $found['queries'] ?? [];

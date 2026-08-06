@@ -103,6 +103,7 @@ class AuditSiteSeo extends AbstractTool {
 
 		// Test 7: Focus keywords.
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Audit query, not suitable for caching.
 		$posts_without_kw = (int) $wpdb->get_var(
 			"SELECT COUNT(*) FROM {$wpdb->posts} p
 			 LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = 'rank_math_focus_keyword'
@@ -110,6 +111,7 @@ class AuditSiteSeo extends AbstractTool {
 			 AND p.post_type IN ('post', 'page')
 			 AND (pm.meta_value IS NULL OR pm.meta_value = '')"
 		);
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Audit query, not suitable for caching.
 		$total_posts = (int) $wpdb->get_var(
 			"SELECT COUNT(*) FROM {$wpdb->posts}
 			 WHERE post_status = 'publish' AND post_type IN ('post', 'page')"
