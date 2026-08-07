@@ -81,6 +81,41 @@ class Registry {
 			self::register( new Elementor\CreateElementorPage() );
 		}
 
+		// Register Elementor Pro tools (only if Elementor Pro is active).
+		if ( defined( 'ELEMENTOR_PRO_VERSION' ) ) {
+			self::register( new ElementorPro\GetFormSubmissions() );
+			self::register( new ElementorPro\ManageGlobalWidgets() );
+			self::register( new ElementorPro\ManageTemplates() );
+		}
+
+		// Register ACF tools (only if ACF is active).
+		if ( class_exists( 'ACF' ) || function_exists( 'acf_get_field_groups' ) ) {
+			self::register( new ACF\GetFieldGroups() );
+			self::register( new ACF\GetFields() );
+			self::register( new ACF\UpdateFields() );
+			self::register( new ACF\DeleteField() );
+		}
+
+		// Register Classic Editor tools (only if Classic Editor is active).
+		if ( defined( 'CLASSIC_EDITOR_VERSION' ) || class_exists( 'Classic_Editor' ) ) {
+			self::register( new ClassicEditor\GetEditorContent() );
+			self::register( new ClassicEditor\SwitchEditor() );
+		}
+
+		// Register Astra/Astra Pro tools (only if Astra theme is active).
+		if ( defined( 'ASTRA_THEME_VERSION' ) || get_template() === 'astra' ) {
+			self::register( new AstraPro\GetThemeSettings() );
+			self::register( new AstraPro\UpdateThemeSettings() );
+			if ( defined( 'ASTRA_EXT_VER' ) ) {
+				self::register( new AstraPro\ManageCustomLayouts() );
+			}
+		}
+
+		// Register Table Addons for Elementor tools.
+		if ( defined( 'TABLE_ADDONS_FOR_ELEMENTOR_VERSION' ) || class_exists( 'TableAddonsForElementor' ) || defined( 'JEstarter_VERSION' ) ) {
+			self::register( new TableAddons\ManageTables() );
+		}
+
 		// Register Rank Math tools (only if Rank Math is active).
 		if ( class_exists( 'RankMath' ) ) {
 			self::register( new RankMath\AuditSiteSeo() );
@@ -259,6 +294,64 @@ class Registry {
 					[ 'name' => 'rankmath_get_ai_visibility_brand_insights', 'description' => 'AI Visibility for a specific brand (PRO)' ],
 					[ 'name' => 'rankmath_get_ai_visibility_brand_queries', 'description' => 'Queries tracked for a brand (PRO)' ],
 					[ 'name' => 'rankmath_create_ai_visibility_brand', 'description' => 'Add a new brand to track (PRO)' ],
+				],
+			];
+		}
+
+		if ( ! defined( 'ELEMENTOR_PRO_VERSION' ) ) {
+			$inactive['elementor_pro'] = [
+				'label'      => __( 'Elementor Pro', 'real-mcp' ),
+				'plugin_url' => 'https://elementor.com/pro/',
+				'tools'      => [
+					[ 'name' => 'elementor_pro_get_form_submissions', 'description' => 'Retrieve form submissions' ],
+					[ 'name' => 'elementor_pro_manage_global_widgets', 'description' => 'List and update global widgets' ],
+					[ 'name' => 'elementor_pro_manage_templates', 'description' => 'List saved templates (headers, footers, popups)' ],
+				],
+			];
+		}
+
+		if ( ! class_exists( 'ACF' ) && ! function_exists( 'acf_get_field_groups' ) ) {
+			$inactive['acf'] = [
+				'label'      => __( 'Advanced Custom Fields (ACF)', 'real-mcp' ),
+				'plugin_url' => 'https://wordpress.org/plugins/advanced-custom-fields/',
+				'tools'      => [
+					[ 'name' => 'acf_get_field_groups', 'description' => 'List all field groups with fields and locations' ],
+					[ 'name' => 'acf_get_fields', 'description' => 'Get ACF field values for a post/user/term' ],
+					[ 'name' => 'acf_update_fields', 'description' => 'Update ACF field values' ],
+					[ 'name' => 'acf_delete_field', 'description' => 'Delete (clear) an ACF field value' ],
+				],
+			];
+		}
+
+		if ( ! defined( 'CLASSIC_EDITOR_VERSION' ) && ! class_exists( 'Classic_Editor' ) ) {
+			$inactive['classic_editor'] = [
+				'label'      => __( 'Classic Editor', 'real-mcp' ),
+				'plugin_url' => 'https://wordpress.org/plugins/classic-editor/',
+				'tools'      => [
+					[ 'name' => 'classic_editor_get_content', 'description' => 'Get post content in classic editor format' ],
+					[ 'name' => 'classic_editor_switch', 'description' => 'Switch a post between block and classic editor' ],
+				],
+			];
+		}
+
+		if ( ! defined( 'ASTRA_THEME_VERSION' ) && get_template() !== 'astra' ) {
+			$inactive['astra'] = [
+				'label'      => __( 'Astra / Astra Pro', 'real-mcp' ),
+				'plugin_url' => 'https://wordpress.org/themes/astra/',
+				'tools'      => [
+					[ 'name' => 'astra_get_theme_settings', 'description' => 'Get Astra theme settings — layout, colors, typography' ],
+					[ 'name' => 'astra_update_theme_settings', 'description' => 'Update Astra theme settings' ],
+					[ 'name' => 'astra_manage_custom_layouts', 'description' => 'Manage Astra Pro custom layouts/hooks (PRO)' ],
+				],
+			];
+		}
+
+		if ( ! defined( 'TABLE_ADDONS_FOR_ELEMENTOR_VERSION' ) && ! class_exists( 'TableAddonsForElementor' ) && ! defined( 'JEstarter_VERSION' ) ) {
+			$inactive['table_addons'] = [
+				'label'      => __( 'Table Addons for Elementor', 'real-mcp' ),
+				'plugin_url' => 'https://wordpress.org/plugins/developer/developer/',
+				'tools'      => [
+					[ 'name' => 'table_addons_manage', 'description' => 'List pages with tables and extract table data' ],
 				],
 			];
 		}

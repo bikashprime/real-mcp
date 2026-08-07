@@ -116,17 +116,22 @@ class Admin {
 		$groups = [];
 
 		$category_labels = [
-			'general'       => __( 'Core — General', 'real-mcp' ),
-			'content'       => __( 'Core — Content', 'real-mcp' ),
-			'seo'           => __( 'Core — SEO', 'real-mcp' ),
-			'media'         => __( 'Core — Media', 'real-mcp' ),
-			'security'      => __( 'Core — Security', 'real-mcp' ),
-			'performance'   => __( 'Core — Performance', 'real-mcp' ),
-			'maintenance'   => __( 'Core — Maintenance', 'real-mcp' ),
-			'accessibility' => __( 'Core — Accessibility', 'real-mcp' ),
-			'woocommerce'   => __( 'WooCommerce', 'real-mcp' ),
-			'elementor'     => __( 'Elementor', 'real-mcp' ),
-			'rankmath'      => __( 'Rank Math SEO', 'real-mcp' ),
+			'general'        => __( 'Core — General', 'real-mcp' ),
+			'content'        => __( 'Core — Content', 'real-mcp' ),
+			'seo'            => __( 'Core — SEO', 'real-mcp' ),
+			'media'          => __( 'Core — Media', 'real-mcp' ),
+			'security'       => __( 'Core — Security', 'real-mcp' ),
+			'performance'    => __( 'Core — Performance', 'real-mcp' ),
+			'maintenance'    => __( 'Core — Maintenance', 'real-mcp' ),
+			'accessibility'  => __( 'Core — Accessibility', 'real-mcp' ),
+			'woocommerce'    => __( 'WooCommerce', 'real-mcp' ),
+			'elementor'      => __( 'Elementor', 'real-mcp' ),
+			'elementor_pro'  => __( 'Elementor Pro', 'real-mcp' ),
+			'rankmath'       => __( 'Rank Math SEO', 'real-mcp' ),
+			'acf'            => __( 'Advanced Custom Fields (ACF)', 'real-mcp' ),
+			'classic_editor' => __( 'Classic Editor', 'real-mcp' ),
+			'astra'          => __( 'Astra / Astra Pro', 'real-mcp' ),
+			'table_addons'   => __( 'Table Addons for Elementor', 'real-mcp' ),
 		];
 
 		foreach ( $tools as $tool ) {
@@ -441,8 +446,28 @@ class Admin {
 					<td><?php echo defined( 'ELEMENTOR_VERSION' ) ? '<span style="color:green;">✓ Active</span>' : '<span style="color:#999;">Not installed</span>'; ?></td>
 				</tr>
 				<tr>
+					<td>Elementor Pro</td>
+					<td><?php echo defined( 'ELEMENTOR_PRO_VERSION' ) ? '<span style="color:green;">✓ Active</span>' : '<span style="color:#999;">Not installed</span>'; ?></td>
+				</tr>
+				<tr>
 					<td>Rank Math SEO</td>
 					<td><?php echo class_exists( 'RankMath' ) ? '<span style="color:green;">✓ Active</span>' : '<span style="color:#999;">Not installed</span>'; ?></td>
+				</tr>
+				<tr>
+					<td>Advanced Custom Fields (ACF)</td>
+					<td><?php echo ( class_exists( 'ACF' ) || function_exists( 'acf_get_field_groups' ) ) ? '<span style="color:green;">✓ Active</span>' : '<span style="color:#999;">Not installed</span>'; ?></td>
+				</tr>
+				<tr>
+					<td>Classic Editor</td>
+					<td><?php echo ( defined( 'CLASSIC_EDITOR_VERSION' ) || class_exists( 'Classic_Editor' ) ) ? '<span style="color:green;">✓ Active</span>' : '<span style="color:#999;">Not installed</span>'; ?></td>
+				</tr>
+				<tr>
+					<td>Astra / Astra Pro</td>
+					<td><?php echo ( defined( 'ASTRA_THEME_VERSION' ) || get_template() === 'astra' ) ? '<span style="color:green;">✓ Active</span>' : '<span style="color:#999;">Not installed</span>'; ?></td>
+				</tr>
+				<tr>
+					<td>Table Addons for Elementor</td>
+					<td><?php echo ( defined( 'TABLE_ADDONS_FOR_ELEMENTOR_VERSION' ) || class_exists( 'TableAddonsForElementor' ) ) ? '<span style="color:green;">✓ Active</span>' : '<span style="color:#999;">Not installed</span>'; ?></td>
 				</tr>
 				<tr>
 					<td>Yoast SEO</td>
